@@ -11,7 +11,7 @@ import UIKit
 public final class CardPopoverPresentationController: UIPresentationController {
     
     public var presentedViewSizeToParentInsets: CGSize = .init(width: 14, height: 44)
-    public var dismissButtonTitle: String? = nil {
+    public var dismissButtonTitle: String? = "Dismiss" {
         didSet {
             guard let buttonTitle = dismissButtonTitle,
                   !buttonTitle.isEmpty else {
@@ -24,18 +24,23 @@ public final class CardPopoverPresentationController: UIPresentationController {
                 dismissButton.setTitle(buttonTitle, for: .normal)
             }
             dismissButton.isHidden = false
-            containerView?.layoutIfNeeded()
+            containerView?.setNeedsLayout()
         }
     }
     public var prefersBlurredBackground: Bool = true {
-        didSet {
-            containerView?.layoutIfNeeded()
-        }
+        didSet { containerView?.setNeedsLayout() }
+    }
+    
+    public var prefersDimmedPresenentingView: Bool = true {
+        didSet { containerView?.setNeedsLayout() }
     }
     
     private var finalFrame: CGRect!
     
-    private var frameChangeAnimator: UIViewPropertyAnimator?
+    private var frameChangeAnimator: UIViewPropertyAnimator? {
+        willSet { frameChangeAnimator?.stopAnimation(true) }
+        didSet { frameChangeAnimator?.startAnimation() }
+    }
     
     private lazy var blurOverlayView: UIVisualEffectView = {
         let fv = UIVisualEffectView(effect: nil)
@@ -43,6 +48,14 @@ public final class CardPopoverPresentationController: UIPresentationController {
         fv.contentView.addGestureRecognizer(tap)
         
         return fv
+    }()
+    
+    private lazy var dimmingView: UIView = {
+        let v = UIView(frame: .zero)
+        v.backgroundColor = .black
+        v.alpha = 0
+        
+        return v
     }()
     
     public private(set) lazy var dismissButton: UIButton = {
@@ -77,6 +90,15 @@ public final class CardPopoverPresentationController: UIPresentationController {
         }
         var constraints: [NSLayoutConstraint] = []
         
+        containerView.addSubview(dimmingView)
+        dimmingView.translatesAutoresizingMaskIntoConstraints = false
+        constraints.append(contentsOf: [
+            dimmingView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            dimmingView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            dimmingView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            dimmingView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
+        ])
+        
         containerView.addSubview(blurOverlayView)
         blurOverlayView.translatesAutoresizingMaskIntoConstraints = false
         constraints.append(contentsOf: [
@@ -103,6 +125,7 @@ public final class CardPopoverPresentationController: UIPresentationController {
         presentedViewController.transitionCoordinator?.animate(alongsideTransition: { context in
             self.blurOverlayView.effect = self.blurEffect
             self.dismissButton.alpha = 1
+            self.dimmingView.alpha = 0.24
         }, completion: nil)
     }
     
@@ -112,14 +135,17 @@ public final class CardPopoverPresentationController: UIPresentationController {
         presentedViewController.transitionCoordinator?.animate(alongsideTransition: { context in
             self.blurOverlayView.effect = nil
             self.dismissButton.alpha = 0
+            self.dimmingView.alpha = 0
         }, completion: nil)
     }
     
     public override func containerViewWillLayoutSubviews() {
         super.containerViewWillLayoutSubviews()
+        
         dismissButton.isHidden = (dismissButtonTitle == nil)
         modalContainerView?.prefersBlurredBackground = !prefersBlurredBackground
         blurOverlayView.effect = prefersBlurredBackground ? blurEffect : nil
+        dimmingView.isHidden = !prefersDimmedPresenentingView
     }
     
     public override func containerViewDidLayoutSubviews() {
@@ -144,15 +170,22 @@ public final class CardPopoverPresentationController: UIPresentationController {
     
     public override func preferredContentSizeDidChange(forChildContentContainer container: UIContentContainer) {
         super.preferredContentSizeDidChange(forChildContentContainer: container)
-        guard !(presentedViewController.isBeingPresented || presentedViewController.isBeingDismissed) else {
+        guard containerView != nil else {
             return
         }
-        frameChangeAnimator = .runningPropertyAnimator(withDuration: Constants.frameUpdateAnimationDuration,
-                                                       delay: 0,
-                                                       options: [.allowUserInteraction],
-                                                       animations: {
-            self.updatePresentedViewFrame()
-        })
+        if presentedViewController.isBeingPresented || presentedViewController.isBeingDismissed {
+            updatePresentedViewFrame()
+        }
+        else {
+            frameChangeAnimator = {
+                let animator = UIViewPropertyAnimator(duration: Constants.frameUpdateAnimationDuration,
+                                                      curve: .linear) {
+                    self.updatePresentedViewFrame()
+                }
+                animator.isUserInteractionEnabled = true
+                return animator
+            }()
+        }
     }
     
 }
@@ -160,8 +193,9 @@ public final class CardPopoverPresentationController: UIPresentationController {
 private extension CardPopoverPresentationController {
     
     enum Constants {
-        static let frameUpdateAnimationDuration: TimeInterval = 0.34
-        static let dismissButtonBottomSpacing: CGFloat = 24
+        static var frameUpdateAnimationDuration: TimeInterval { 0.18 }
+        static var dismissButtonBottomSpacing: CGFloat { 24 }
+        static var dimmingViewAlpha: CGFloat { 0.24 }
     }
     
     var modalContainerView: ModalContainerView? {
@@ -172,7 +206,6 @@ private extension CardPopoverPresentationController {
     
     func updatePresentedViewFrame() {
         guard let containerView = containerView else {
-            assertionFailure("containerView was nil.")
             return
         }
         modalContainerView?.frame = frameOfPresentedView(inParent: containerView)

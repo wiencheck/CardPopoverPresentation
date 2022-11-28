@@ -43,14 +43,9 @@ final class ModalContainerView: UIView {
     convenience init(frame: CGRect = .zero, contentView view: UIView) {
         self.init(frame: frame)
         
+        view.frame = contentView.bounds
+        view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         contentView.addSubview(view)
-        view.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            view.topAnchor.constraint(equalTo: contentView.topAnchor),
-            view.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            view.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-            view.leadingAnchor.constraint(equalTo: contentView.leadingAnchor)
-        ])
     }
     
     override init(frame: CGRect) {
@@ -89,10 +84,8 @@ private extension ModalContainerView {
         constraints.append(contentsOf: [
             visualEffectView.topAnchor.constraint(equalTo: topAnchor),
             visualEffectView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            visualEffectView.trailingAnchor.constraint(equalTo: trailingAnchor)
-                .withPriority(.defaultHigh),
+            visualEffectView.trailingAnchor.constraint(equalTo: trailingAnchor),
             visualEffectView.bottomAnchor.constraint(equalTo: bottomAnchor)
-                .withPriority(.defaultHigh)
         ])
         
         NSLayoutConstraint.activate(constraints)

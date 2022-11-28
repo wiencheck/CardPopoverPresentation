@@ -80,9 +80,8 @@ private extension CardPopoverTransitionAnimator {
         presentedViewContainer.alpha = (source == nil) ? 0 : Constants.initialPresentedViewAlpha
         
         context.containerView.addSubview(presentedViewContainer)
-
-        let animator = UIViewPropertyAnimator(duration: duration,
-                                              dampingRatio: Constants.animatorDampingRatio)
+        
+        let animator = makeDefaultPropertyAnimator()
         animator.addAnimations {
             presentedViewContainer.alpha = 1
             presentedViewContainer.transform = .identity
@@ -102,8 +101,7 @@ private extension CardPopoverTransitionAnimator {
             assertionFailure("Presented view was nil")
             return
         }
-        let animator = UIViewPropertyAnimator(duration: duration,
-                                              dampingRatio: Constants.animatorDampingRatio)
+        let animator = makeDefaultPropertyAnimator()
         animator.addAnimations {
             presentedViewContainer.transform = self.initialTransformForPresentedView()
             presentedViewContainer.alpha = 0
@@ -117,6 +115,14 @@ private extension CardPopoverTransitionAnimator {
             context.completeTransition(true)
         }
         runningAnimator = animator
+    }
+    
+    func makeDefaultPropertyAnimator() -> UIViewPropertyAnimator {
+        let animator = UIViewPropertyAnimator(duration: duration,
+                                              dampingRatio: Constants.animatorDampingRatio)
+        animator.isUserInteractionEnabled = true
+        
+        return animator
     }
     
 }

@@ -14,14 +14,18 @@ public final class CardPopoverPresentation: NSObject, UIViewControllerTransition
         case fromTop, fromLeft, fromBottom, fromRight
     }
     
-    public var transitionDuration: TimeInterval = 0.8
+    public var transitionDuration: TimeInterval = 0.38
     public var sourceDirection: SourceDirection?
+    
+    public init(sourceDirection: SourceDirection? = nil) {
+        self.sourceDirection = sourceDirection
+    }
     
     private lazy var transitionAnimator: CardPopoverTransitionAnimator = .init(duration: transitionDuration)
     
     public func presentationController(forPresented presented: UIViewController, presenting: UIViewController?, source: UIViewController) -> UIPresentationController? {
         return CardPopoverPresentationController(presentedViewController: presented,
-                                                    presenting: presenting)
+                                                 presenting: presenting)
     }
     
     public func animationController(forPresented presented: UIViewController, presenting: UIViewController, source: UIViewController) -> UIViewControllerAnimatedTransitioning? {
