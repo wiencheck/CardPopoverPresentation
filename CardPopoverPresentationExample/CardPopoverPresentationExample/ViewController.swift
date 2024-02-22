@@ -13,6 +13,7 @@ class ViewController: UIViewController {
     private lazy var transitionManager: CardPopoverPresentation = {
         let manager = CardPopoverPresentation()
         manager.sourceDirection = .fromLeft
+        
         return manager
     }()
 
@@ -30,8 +31,8 @@ class ViewController: UIViewController {
             //vc?.preferredContentSize.height = 200
             if let presentationController = vc?.presentationController as? CardPopoverPresentationController {
                 self?.transitionManager.sourceDirection = .fromRight
-                presentationController.dismissButtonTitle = "A tera chuj!"
                 presentationController.prefersBlurredBackground.toggle()
+                presentationController.buttonsView.addButton(UIButton())
             }
             self?.view.backgroundColor = .systemBackground
         }

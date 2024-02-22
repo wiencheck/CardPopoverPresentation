@@ -7,26 +7,35 @@
 
 import Foundation
 import UIKit
+import Combine
+import ScrollingButtons
 
 public final class CardPopoverPresentationController: UIPresentationController {
     
     public var presentedViewSizeToParentInsets: CGSize = .init(width: 14, height: 44)
-    public var dismissButtonTitle: String? = "Dismiss" {
-        didSet {
-            guard let buttonTitle = dismissButtonTitle,
-                  !buttonTitle.isEmpty else {
-                dismissButton.isHidden = true
-                return
-            }
-            if #available(iOS 15.0, *) {
-                dismissButton.configuration?.title = buttonTitle
-            } else {
-                dismissButton.setTitle(buttonTitle, for: .normal)
-            }
-            dismissButton.isHidden = false
-            containerView?.setNeedsLayout()
+    
+    public private(set) lazy var buttonsView: ScrollingButtonsView = {
+        let btn: UIButton
+        if #available(iOS 15.0, *) {
+            var configuration = UIButton.Configuration.filled()
+            configuration.cornerStyle = .capsule
+            configuration.title = "Dismiss"
+            
+            btn = UIButton(configuration: configuration)
         }
-    }
+        else {
+            btn = UIButton(type: .custom)
+            btn.setTitle("Dismiss", for: .normal)
+        }
+        btn.addTarget(
+            self,
+            action: #selector(dismissPresentedView),
+            for: .touchUpInside
+        )
+        
+        return .init(buttons: [btn])
+    }()
+    
     public var prefersBlurredBackground: Bool = true {
         didSet { containerView?.setNeedsLayout() }
     }
@@ -58,30 +67,6 @@ public final class CardPopoverPresentationController: UIPresentationController {
         return v
     }()
     
-    public private(set) lazy var dismissButton: UIButton = {
-        lazy var action = UIAction() { [weak self] _ in
-            self?.dismissPresentedView()
-        }
-        if #available(iOS 15.0, *) {
-            var configuration = UIButton.Configuration.filled()
-            configuration.cornerStyle = .capsule
-            configuration.title = dismissButtonTitle
-            
-            return UIButton(configuration: configuration,
-                            primaryAction: action)
-        }
-        let btn = UIButton(type: .system)
-        if #available(iOS 14.0, *) {
-            btn.addAction(action, for: .primaryActionTriggered)
-        }
-        else {
-            btn.addTarget(self, action: #selector(dismissPresentedView), for: .touchUpInside)
-        }
-        btn.setTitle(dismissButtonTitle, for: .normal)
-        
-        return btn
-    }()
-    
     public override func presentationTransitionWillBegin() {
         super.presentationTransitionWillBegin()
         
@@ -108,12 +93,19 @@ public final class CardPopoverPresentationController: UIPresentationController {
             blurOverlayView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
         ])
         
-        dismissButton.alpha = 0
-        containerView.addSubview(dismissButton)
-        dismissButton.translatesAutoresizingMaskIntoConstraints = false
+        buttonsView.alpha = 0
+        containerView.addSubview(buttonsView)
+        buttonsView.translatesAutoresizingMaskIntoConstraints = false
         constraints.append(contentsOf: [
-            dismissButton.bottomAnchor.constraint(equalTo: containerView.safeAreaLayoutGuide.bottomAnchor, constant: -Constants.dismissButtonBottomSpacing),
-            dismissButton.centerXAnchor.constraint(equalTo: containerView.safeAreaLayoutGuide.centerXAnchor)
+            buttonsView.bottomAnchor.constraint(
+                equalTo: containerView.safeAreaLayoutGuide.bottomAnchor,
+                constant: -Constants.dismissButtonBottomSpacing
+            ),
+            buttonsView.leadingAnchor.constraint(equalTo: containerView.safeAreaLayoutGuide.leadingAnchor),
+            buttonsView.centerXAnchor.constraint(
+                equalTo: containerView.safeAreaLayoutGuide.centerXAnchor
+            ),
+            buttonsView.heightAnchor.constraint(equalToConstant: 34)
         ])
         NSLayoutConstraint.activate(constraints)
         
@@ -124,7 +116,7 @@ public final class CardPopoverPresentationController: UIPresentationController {
         
         presentedViewController.transitionCoordinator?.animate(alongsideTransition: { context in
             self.blurOverlayView.effect = self.blurEffect
-            self.dismissButton.alpha = 1
+            self.buttonsView.alpha = 1
             self.dimmingView.alpha = 0.24
         }, completion: nil)
     }
@@ -134,7 +126,7 @@ public final class CardPopoverPresentationController: UIPresentationController {
         
         presentedViewController.transitionCoordinator?.animate(alongsideTransition: { context in
             self.blurOverlayView.effect = nil
-            self.dismissButton.alpha = 0
+            self.buttonsView.alpha = 0
             self.dimmingView.alpha = 0
         }, completion: nil)
     }
@@ -142,7 +134,6 @@ public final class CardPopoverPresentationController: UIPresentationController {
     public override func containerViewWillLayoutSubviews() {
         super.containerViewWillLayoutSubviews()
         
-        dismissButton.isHidden = (dismissButtonTitle == nil)
         modalContainerView?.prefersBlurredBackground = !prefersBlurredBackground
         blurOverlayView.effect = prefersBlurredBackground ? blurEffect : nil
         dimmingView.isHidden = !prefersDimmedPresenentingView
@@ -273,8 +264,11 @@ private extension CardPopoverPresentationController {
             }
         }
         
-        if !dismissButton.isHidden {
-            let expandedButtonFrame = dismissButton.frame.insetBy(dx: 0, dy: -Constants.dismissButtonBottomSpacing)
+        if !buttonsView.isHidden {
+            let expandedButtonFrame = buttonsView.frame.insetBy(
+                dx: 0,
+                dy: -Constants.dismissButtonBottomSpacing
+            )
             let buttonIntersection = presentedViewFrame.intersection(expandedButtonFrame)
             if !buttonIntersection.isNull {
                 presentedViewFrame.size.height -= buttonIntersection.height
