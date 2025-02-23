@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class ModalContainerView: UIView {
+public final class ModalContainerView: UIView {
         
     private lazy var visualEffectView: UIVisualEffectView = {
         let view = UIVisualEffectView(effect: nil)
@@ -29,9 +29,9 @@ final class ModalContainerView: UIView {
         return view
     }()
     
-    var contentView: UIView { visualEffectView.contentView }
+    public var contentView: UIView { visualEffectView.contentView }
     
-    var prefersBlurredBackground: Bool {
+    public var prefersBlurredBackground: Bool {
         get {
             visualEffectView.effect != nil
         } set {
@@ -40,7 +40,7 @@ final class ModalContainerView: UIView {
         }
     }
     
-    convenience init(frame: CGRect = .zero, contentView view: UIView) {
+    public convenience init(frame: CGRect = .zero, contentView view: UIView) {
         self.init(frame: frame)
         
         view.frame = contentView.bounds
@@ -48,12 +48,12 @@ final class ModalContainerView: UIView {
         contentView.addSubview(view)
     }
     
-    override init(frame: CGRect) {
+    public override init(frame: CGRect) {
         super.init(frame: frame)
         commonInit()
     }
     
-    required init?(coder: NSCoder) {
+    public required init?(coder: NSCoder) {
         fatalError()
     }
     
@@ -130,15 +130,6 @@ private extension ModalContainerView {
             }
             .resizableImage(withCapInsets: edgeInsets,
                             resizingMode: .tile)
-    }
-    
-}
-
-fileprivate extension NSLayoutConstraint {
-    
-    func withPriority(_ priority: UILayoutPriority) -> Self {
-        self.priority = priority
-        return self
     }
     
 }

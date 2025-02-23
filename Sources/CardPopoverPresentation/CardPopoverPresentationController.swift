@@ -12,29 +12,45 @@ import ScrollingButtons
 
 public final class CardPopoverPresentationController: UIPresentationController {
     
-    public var presentedViewSizeToParentInsets: CGSize = .init(width: 14, height: 44)
+    internal static let presentedViewTag = 7810571
     
-    public private(set) lazy var buttonsView: ScrollingButtonsView = {
-        let btn: UIButton
-        if #available(iOS 15.0, *) {
-            var configuration = UIButton.Configuration.filled()
-            configuration.cornerStyle = .capsule
-            configuration.title = "Dismiss"
-            
-            btn = UIButton(configuration: configuration)
-        }
-        else {
-            btn = UIButton(type: .custom)
-            btn.setTitle("Dismiss", for: .normal)
-        }
-        btn.addTarget(
-            self,
-            action: #selector(dismissPresentedView),
-            for: .touchUpInside
+    public private(set) lazy var closeButton: UIButton = {
+        let btn = UIButton(type: .close)
+        btn.addAction(
+            UIAction(
+                handler: { [weak self] _ in
+                    self?.presentedViewController.dismiss(animated: true)
+                }
+            ),
+            for: .primaryActionTriggered
         )
         
-        return .init(buttons: [btn])
+        return btn
     }()
+    
+    public var bottomView: UIView?
+    
+    // MARK: Settable properties
+    
+    public var embeedView: Bool = true {
+        didSet { containerView?.setNeedsLayout() }
+    }
+    
+    public var presentedViewInsets: CGSize = .init(width: 8, height: 14) {
+        didSet { containerView?.setNeedsLayout() }
+    }
+    
+    public var closeButtonInsets: CGSize = CGSize(width: 0, height: 6) {
+        didSet { containerView?.setNeedsLayout() }
+    }
+    
+    public var backgroundTapDismisses: Bool = true {
+        didSet { containerView?.setNeedsLayout() }
+    }
+    
+    public var ignoredSafeAreaEdges: UIRectEdge = [] {
+        didSet { containerView?.setNeedsLayout() }
+    }
     
     public var prefersBlurredBackground: Bool = true {
         didSet { containerView?.setNeedsLayout() }
@@ -67,12 +83,12 @@ public final class CardPopoverPresentationController: UIPresentationController {
         return v
     }()
     
+    private var _closeButtonHiddenObservation: NSKeyValueObservation!
+    
     public override func presentationTransitionWillBegin() {
         super.presentationTransitionWillBegin()
         
-        guard let containerView = containerView else {
-            return
-        }
+        guard let containerView else { return }
         var constraints: [NSLayoutConstraint] = []
         
         containerView.addSubview(dimmingView)
@@ -93,32 +109,32 @@ public final class CardPopoverPresentationController: UIPresentationController {
             blurOverlayView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
         ])
         
-        buttonsView.alpha = 0
-        containerView.addSubview(buttonsView)
-        buttonsView.translatesAutoresizingMaskIntoConstraints = false
-        constraints.append(contentsOf: [
-            buttonsView.bottomAnchor.constraint(
-                equalTo: containerView.safeAreaLayoutGuide.bottomAnchor,
-                constant: -Constants.dismissButtonBottomSpacing
-            ),
-            buttonsView.leadingAnchor.constraint(equalTo: containerView.safeAreaLayoutGuide.leadingAnchor),
-            buttonsView.centerXAnchor.constraint(
-                equalTo: containerView.safeAreaLayoutGuide.centerXAnchor
-            ),
-            buttonsView.heightAnchor.constraint(equalToConstant: 34)
-        ])
+        closeButton.alpha = 0
+        containerView.addSubview(closeButton)
+        
         NSLayoutConstraint.activate(constraints)
         
-        if let presentedView = presentedView {
-            let modalContainerView = ModalContainerView(contentView: presentedView)
-            containerView.addSubview(modalContainerView)
+        if let presentedView {
+            let subview: UIView = embeedView ? ModalContainerView(contentView: presentedView) : presentedView
+            subview.tag = Self.presentedViewTag
+            containerView.addSubview(subview)
         }
         
         presentedViewController.transitionCoordinator?.animate(alongsideTransition: { context in
             self.blurOverlayView.effect = self.blurEffect
-            self.buttonsView.alpha = 1
+            self.closeButton.alpha = 1
             self.dimmingView.alpha = 0.24
         }, completion: nil)
+    }
+    
+    public override func presentationTransitionDidEnd(_ completed: Bool) {
+        super.presentationTransitionDidEnd(completed)
+        guard completed else { return }
+        
+        _closeButtonHiddenObservation = closeButton.observe(\.isHidden, options: .new) { [weak self] _, change in
+            if change.newValue == nil { return }
+            self?.updatePresentedViewFrame()
+        }
     }
     
     public override func dismissalTransitionWillBegin() {
@@ -126,7 +142,7 @@ public final class CardPopoverPresentationController: UIPresentationController {
         
         presentedViewController.transitionCoordinator?.animate(alongsideTransition: { context in
             self.blurOverlayView.effect = nil
-            self.buttonsView.alpha = 0
+            self.closeButton.alpha = 0
             self.dimmingView.alpha = 0
         }, completion: nil)
     }
@@ -134,6 +150,7 @@ public final class CardPopoverPresentationController: UIPresentationController {
     public override func containerViewWillLayoutSubviews() {
         super.containerViewWillLayoutSubviews()
         
+        closeButton.sizeToFit()
         modalContainerView?.prefersBlurredBackground = !prefersBlurredBackground
         blurOverlayView.effect = prefersBlurredBackground ? blurEffect : nil
         dimmingView.isHidden = !prefersDimmedPresenentingView
@@ -149,11 +166,11 @@ public final class CardPopoverPresentationController: UIPresentationController {
     }
     
     public override func size(forChildContentContainer container: UIContentContainer, withParentContainerSize parentSize: CGSize) -> CGSize {
-        return frameOfPresentedViewInContainerView.size
+        frameOfPresentedViewInContainerView.size
     }
     
     public override var frameOfPresentedViewInContainerView: CGRect {
-        guard let containerView = containerView else {
+        guard let containerView else {
             return super.frameOfPresentedViewInContainerView
         }
         return frameOfPresentedView(inParent: containerView)
@@ -185,8 +202,14 @@ private extension CardPopoverPresentationController {
     
     enum Constants {
         static var frameUpdateAnimationDuration: TimeInterval { 0.18 }
-        static var dismissButtonBottomSpacing: CGFloat { 24 }
+        static var dismissButtonBottomSpacing: CGFloat { 14 }
         static var dimmingViewAlpha: CGFloat { 0.24 }
+    }
+    
+    var _presentedView: UIView? {
+        containerView?.subviews.first(where: {
+            $0 is ModalContainerView
+        }) ?? presentedView
     }
     
     var modalContainerView: ModalContainerView? {
@@ -196,94 +219,79 @@ private extension CardPopoverPresentationController {
     var blurEffect: UIBlurEffect { .init(style: .prominent) }
     
     func updatePresentedViewFrame() {
-        guard let containerView = containerView else {
+        guard let containerView, let _presentedView else {
             return
         }
-        modalContainerView?.frame = frameOfPresentedView(inParent: containerView)
+        _presentedView.frame = frameOfPresentedView(inParent: containerView)
+        if !closeButton.isHidden {
+            updateCloseButtonFrame(attachedView: _presentedView)
+        }
+    }
+    
+    func updateCloseButtonFrame(attachedView: UIView) {
+        let buttonFrame = closeButton.frame
+        
+        closeButton.frame.origin = CGPoint(
+            x: attachedView.frame.maxX - buttonFrame.width - closeButtonInsets.width,
+            y: attachedView.frame.minY - buttonFrame.height - closeButtonInsets.height
+        )
     }
     
     func frameOfPresentedView(inParent parentView: UIView) -> CGRect {
-        let parentFrame = parentView.frame
-        let safeAreaFrame = parentView.safeAreaLayoutGuide.layoutFrame
+        var containingFrame: CGRect = parentView.safeAreaLayoutGuide.layoutFrame
+        
+        if ignoredSafeAreaEdges.contains(.top) {
+            containingFrame.origin.y = parentView.frame.minY
+            containingFrame.size.height += parentView.safeAreaInsets.top
+        }
+        if ignoredSafeAreaEdges.contains(.left) {
+            containingFrame.origin.x = parentView.frame.minX
+            containingFrame.size.width += parentView.safeAreaInsets.left
+        }
+        if ignoredSafeAreaEdges.contains(.bottom) {
+            containingFrame.size.height += parentView.safeAreaInsets.bottom
+        }
+        if ignoredSafeAreaEdges.contains(.right) {
+            containingFrame.size.width += parentView.safeAreaInsets.right
+        }
+        if !closeButton.isHidden {
+            let offset = closeButton.frame.height + closeButtonInsets.height
+            containingFrame.origin.y += offset
+            containingFrame.size.height -= offset
+        }
         
         var size: CGSize = .zero
-        size.width = parentFrame.width - (presentedViewSizeToParentInsets.width * 2)
-        size.height = parentFrame.height - (presentedViewSizeToParentInsets.height * 2)
+        let controllerPreferredContentSize = presentedViewController.preferredContentSize
         
-        let preferredContentSize = presentedViewController.preferredContentSize
-        if preferredContentSize != .zero {
-            if preferredContentSize.height != .zero, preferredContentSize.height < size.height {
-                size.height = preferredContentSize.height
-            }
-            if preferredContentSize.width != .zero, preferredContentSize.width < size.width {
-                size.width = preferredContentSize.width
-            }
+        if controllerPreferredContentSize.width != .zero {
+            size.width = controllerPreferredContentSize.width
+        }
+        else {
+            size.width = containingFrame.width - (presentedViewInsets.width * 2)
+        }
+        if controllerPreferredContentSize.height != .zero {
+            size.height = controllerPreferredContentSize.height
+        }
+        else {
+            size.height = containingFrame.height - (presentedViewInsets.height * 2)
         }
         
-        var origin: CGPoint = .zero
-        origin.x = max((parentFrame.width - size.width) / 2,
-                       safeAreaFrame.minX + presentedViewSizeToParentInsets.width)
-        
-        origin.y = max((parentFrame.height - size.height) / 2,
-                       safeAreaFrame.minY + presentedViewSizeToParentInsets.height)
-        
-        var presentedViewFrame = CGRect(origin: origin, size: size)
-        
-        while !safeAreaFrame.contains(presentedViewFrame) {
-            if presentedViewFrame.minY < safeAreaFrame.minY {
-                let inset = (safeAreaFrame.minY - presentedViewFrame.minY)
-                if safeAreaFrame.contains(presentedViewFrame.offsetBy(dx: 0, dy: inset)) {
-                    presentedViewFrame.origin.y += inset
-                } else {
-                    presentedViewFrame.size.height -= inset
-                }
-            }
-            else if presentedViewFrame.minX < safeAreaFrame.minX {
-                let inset = (safeAreaFrame.minX - presentedViewFrame.minX)
-                if safeAreaFrame.contains(presentedViewFrame.offsetBy(dx: inset, dy: 0)) {
-                    presentedViewFrame.origin.x += inset
-                } else {
-                    presentedViewFrame.size.width -= inset
-                }
-            }
-            else if presentedViewFrame.maxY > safeAreaFrame.maxY {
-                let offset = (presentedViewFrame.maxY - safeAreaFrame.maxY)
-                if safeAreaFrame.contains(presentedViewFrame.offsetBy(dx: 0, dy: -offset)) {
-                    presentedViewFrame.origin.y -= offset
-                } else {
-                    presentedViewFrame.size.height -= offset
-                }
-            }
-            else if presentedViewFrame.maxX > safeAreaFrame.maxX {
-                let offset = (presentedViewFrame.maxX - safeAreaFrame.maxX)
-                if safeAreaFrame.contains(presentedViewFrame.offsetBy(dx: -offset, dy: 0)) {
-                    presentedViewFrame.origin.x -= offset
-                } else {
-                    presentedViewFrame.size.width -= offset
-                }
-            }
-        }
-        
-        if !buttonsView.isHidden {
-            let expandedButtonFrame = buttonsView.frame.insetBy(
-                dx: 0,
-                dy: -Constants.dismissButtonBottomSpacing
-            )
-            let buttonIntersection = presentedViewFrame.intersection(expandedButtonFrame)
-            if !buttonIntersection.isNull {
-                presentedViewFrame.size.height -= buttonIntersection.height
-            }
-        }
+        let presentedViewFrame = CGRect(
+            x: containingFrame.midX - (size.width / 2), // Center horizontally
+            y: containingFrame.midY - (size.height / 2), // Center vetically
+            width: size.width,
+            height: size.height
+        )
         
         return presentedViewFrame
     }
     
     func insertShadowUnderPresentedView() {
         let shadowViewTag = 1517910
-        guard let presentedView = presentedView else {
+        guard let presentedView, let containerView else {
             return
         }
-        if let shadowView = containerView?.viewWithTag(shadowViewTag) {
+        if let shadowView = containerView.viewWithTag(shadowViewTag) {
             shadowView.frame = frameOfPresentedViewInContainerView
         }
         else {
@@ -298,11 +306,12 @@ private extension CardPopoverPresentationController {
             shadowView.layer.shadowRadius = 10
             shadowView.layer.shadowOpacity = 1.0
             
-            containerView?.insertSubview(shadowView, belowSubview: presentedView)
+            containerView.insertSubview(shadowView, belowSubview: presentedView)
         }
     }
     
     @objc func dismissPresentedView() {
+        guard backgroundTapDismisses else { return }
         presentedViewController.dismiss(animated: true)
     }
     

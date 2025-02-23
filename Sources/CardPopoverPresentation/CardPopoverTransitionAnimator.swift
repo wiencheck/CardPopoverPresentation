@@ -71,7 +71,7 @@ private extension CardPopoverTransitionAnimator {
     
     func animatePresenting(usingTransitionContext context: UIViewControllerContextTransitioning) {
         guard let presentedViewController = context.viewController(forKey: .to),
-              let presentedViewContainer = context.containerView.subviews.first(where: { $0 is ModalContainerView }) else {
+              let presentedViewContainer = context.containerView.viewWithTag(CardPopoverPresentationController.presentedViewTag) else {
             assertionFailure("Presented view was nil")
             return
         }
@@ -97,7 +97,7 @@ private extension CardPopoverTransitionAnimator {
     }
     
     func animateDismissing(usingTransitionContext context: UIViewControllerContextTransitioning) {
-        guard let presentedViewContainer = context.containerView.subviews.first(where: { $0 is ModalContainerView }) else {
+        guard let presentedViewContainer = context.containerView.viewWithTag(CardPopoverPresentationController.presentedViewTag) else {
             assertionFailure("Presented view was nil")
             return
         }

@@ -3,10 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 55;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2BD3D1E62D64FE6800DD64E0 /* AWPageViewController in Frameworks */ = {isa = PBXBuildFile; productRef = 2BD3D1E52D64FE6800DD64E0 /* AWPageViewController */; };
 		B0EBDA01284CB055003D56E8 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EBDA00284CB055003D56E8 /* AppDelegate.swift */; };
 		B0EBDA03284CB055003D56E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EBDA02284CB055003D56E8 /* SceneDelegate.swift */; };
 		B0EBDA05284CB055003D56E8 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EBDA04284CB055003D56E8 /* ViewController.swift */; };
@@ -33,6 +34,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2BD3D1E62D64FE6800DD64E0 /* AWPageViewController in Frameworks */,
 				B0EBDA18284CB072003D56E8 /* CardPopoverPresentation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -105,6 +107,7 @@
 			name = CardPopoverPresentationExample;
 			packageProductDependencies = (
 				B0EBDA17284CB072003D56E8 /* CardPopoverPresentation */,
+				2BD3D1E52D64FE6800DD64E0 /* AWPageViewController */,
 			);
 			productName = CardPopoverPresentationExample;
 			productReference = B0EBD9FD284CB055003D56E8 /* CardPopoverPresentationExample.app */;
@@ -134,6 +137,9 @@
 				Base,
 			);
 			mainGroup = B0EBD9F4284CB055003D56E8;
+			packageReferences = (
+				2BD3D1E42D64FE6800DD64E0 /* XCLocalSwiftPackageReference "../../AWPageViewController" */,
+			);
 			productRefGroup = B0EBD9FE284CB055003D56E8 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -382,7 +388,18 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		2BD3D1E42D64FE6800DD64E0 /* XCLocalSwiftPackageReference "../../AWPageViewController" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../AWPageViewController;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		2BD3D1E52D64FE6800DD64E0 /* AWPageViewController */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AWPageViewController;
+		};
 		B0EBDA17284CB072003D56E8 /* CardPopoverPresentation */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = CardPopoverPresentation;

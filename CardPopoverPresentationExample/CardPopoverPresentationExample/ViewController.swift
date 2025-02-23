@@ -7,6 +7,7 @@
 
 import UIKit
 import CardPopoverPresentation
+import AWPageViewController
 
 class ViewController: UIViewController {
     
@@ -23,18 +24,42 @@ class ViewController: UIViewController {
     }
     
     @IBAction func buttonPressed(_ sender: UIButton) {
+        let controllers: [UIViewController] = [UIColor.systemCyan, .systemRed, .systemGreen]
+            .map { color in
+                let vc = UIViewController()
+                vc.view.backgroundColor = color
+                return vc
+            }
+//        let vc = AWPageViewController(
+//            viewControllers: controllers,
+//            transitionStyle: .scroll,
+//            orientation: .horizontal
+//        )
+//        vc.shouldDisplayPageControl = false
+        
         let vc = UINavigationController(rootViewController: TableViewController())
         vc.transitioningDelegate = transitionManager
         vc.modalPresentationStyle = .custom
+        if let popo = vc.presentationController as? CardPopoverPresentationController {
+            popo.containerView?.overrideUserInterfaceStyle = .dark
+  //          popo.ignoredSafeAreaEdges = .bottom
+  //          popo.presentedViewInsets = .zero
+            popo.embeedView = true
+   //         popo.prefersBlurredBackground = false
+//            if #available(iOS 17.0, *) {
+//                popo.traitOverrides.userInterfaceStyle = .dark
+//            } else {
+//                // Fallback on earlier versions
+//            }
+        }
         //vc.preferredContentSize = .init(width: 650, height: 600)
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self, weak vc] in
-            //vc?.preferredContentSize.height = 200
-            if let presentationController = vc?.presentationController as? CardPopoverPresentationController {
-                self?.transitionManager.sourceDirection = .fromRight
-                presentationController.prefersBlurredBackground.toggle()
-                presentationController.buttonsView.addButton(UIButton())
-            }
-            self?.view.backgroundColor = .systemBackground
+ //           vc?.preferredContentSize.height = 200
+//            if let presentationController = vc?.presentationController as? CardPopoverPresentationController {
+//                self?.transitionManager.sourceDirection = .fromRight
+//                presentationController.prefersBlurredBackground.toggle()
+//            }
+//            self?.view.backgroundColor = .systemBackground
         }
         present(vc, animated: true)
     }
@@ -76,4 +101,6 @@ final class TableViewController: UITableViewController {
     
 }
 
-
+final class Page: AWPageViewController {
+    
+}
