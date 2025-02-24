@@ -74,7 +74,7 @@ public final class CardPopoverPresentationController: UIPresentationController {
      Height defines space in points between button and presented view.
      Width defines space in points between right edge of the button and right edge of presented view.
      */
-    public var dismissButtonInsets = CGSize(width: 0, height: 6) {
+    public var dismissButtonInsets = CGSize(width: 0, height: 8) {
         didSet { containerView?.setNeedsLayout() }
     }
     
@@ -177,6 +177,7 @@ public final class CardPopoverPresentationController: UIPresentationController {
         
         if _isDebuggingFrames {
             let sf = UIView()
+            sf.isUserInteractionEnabled = false
             sf.backgroundColor = .red
             containerView.addSubview(sf)
             sf.translatesAutoresizingMaskIntoConstraints = false
@@ -370,7 +371,7 @@ private extension CardPopoverPresentationController {
         maxSize.width -= (2 * presentedViewInsets.width.grtZ)
         maxSize.height -= (2 * presentedViewInsets.height.grtZ)
         if showsDismissButton {
-            maxSize.height -= (_dismissButton.frame.height + dismissButtonInsets.height.grtZ) * 2 // Why 2? I don't really know
+            maxSize.height -= (_dismissButton.frame.height + dismissButtonInsets.height.grtZ)
         }
         if let bottomView {
             maxSize.height -= (bottomView.frame.height + bottomViewSpacing.grtZ)
@@ -385,25 +386,32 @@ private extension CardPopoverPresentationController {
         let preferredContentSize = presentedViewController.preferredContentSize
         if preferredContentSize.width > .zero && preferredContentSize.width <= maxSize.width {
             presentedViewFrame.size.width = preferredContentSize.width
+            presentedViewFrame.origin.x = containingFrame.midX - (presentedViewFrame.width / 2)
         }
         else {
             presentedViewFrame.size.width = maxSize.width
+            presentedViewFrame.origin.x = containingFrame.minX + presentedViewInsets.width
         }
         if preferredContentSize.height > .zero && preferredContentSize.height <= maxSize.height {
             presentedViewFrame.size.height = preferredContentSize.height
+            presentedViewFrame.origin.y = containingFrame.midY - (presentedViewFrame.height / 2)
         }
         else {
             presentedViewFrame.size.height = maxSize.height
+            presentedViewFrame.origin.y = containingFrame.minY + presentedViewInsets.height
+            if showsDismissButton {
+                presentedViewFrame.origin.y += (_dismissButton.frame.height + dismissButtonInsets.height)
+            }
         }
         
         /*
          We want presented view to sit in the center of container frame so we adjust
          its origin to achieve that now that we know its size.
          */
-        presentedViewFrame.origin = CGPoint(
-            x: containingFrame.midX - (presentedViewFrame.width / 2), // Center horizontally
-            y: containingFrame.midY - (presentedViewFrame.height / 2) // Center vertically
-        )
+//        presentedViewFrame.origin = CGPoint(
+//            x: containingFrame.midX - (presentedViewFrame.width / 2), // Center horizontally
+//            y: containingFrame.midY - (presentedViewFrame.height / 2) // Center vertically
+//        )
         
         return presentedViewFrame
     }

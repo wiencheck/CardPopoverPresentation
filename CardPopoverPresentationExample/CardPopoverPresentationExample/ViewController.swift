@@ -38,15 +38,16 @@ class ViewController: UIViewController {
 //        vc.shouldDisplayPageControl = false
         
         let vc = UINavigationController(rootViewController: TableViewController())
-    //    vc.preferredContentSize.height = 320
+       // vc.preferredContentSize.height = 120
         vc.transitioningDelegate = transitionManager
     //    vc.overrideUserInterfaceStyle = .dark
         vc.modalPresentationStyle = .custom
         if let popo = vc.presentationController as? CardPopoverPresentationController {
             popo.overrideTraitCollection = UITraitCollection(userInterfaceStyle: .dark)
             popo.containerView?.overrideUserInterfaceStyle = .dark
-            //popo.ignoredSafeAreaEdges = [.left, .right]
+            //popo.ignoredSafeAreaEdges = [.bottom, .top]
             //popo.presentedViewInsets.width = .zero
+         //   popo.presentedViewInsets = .zero
             popo.embeedView = true
         //    popo.dismissButtonInsets.width = 64
     //        popo.bottomViewSpacing = 160
@@ -56,24 +57,19 @@ class ViewController: UIViewController {
 //            } else {
 //                // Fallback on earlier versions
 //            }
-//            popo.showsDismissButton = false
+       //    popo.showsDismissButton = false
+            
             popo.bottomView = {
-//                let cont = UIPageControl()
-//                cont.numberOfPages = 6
-//                cont.currentPage = 2
-//                cont.sizeToFit()
-//                return cont
-                let view = UIView(
-                    frame: CGRect(
-                        x: 0,
-                        y: 0,
-                        width: 160,
-                        height: 32
-                    )
-                )
-                view.backgroundColor = .yellow
+                let btn = UIButton(type: .system, primaryAction: UIAction() { [unowned vc, weak popo] _ in
+                    let height = vc.preferredContentSize.height
+                    vc.preferredContentSize.height = (height >= 140) ? 0 : 140
+                    popo?.showsDismissButton.toggle()
+                })
+                btn.configuration = UIButton.Configuration.borderedTinted()
+                btn.configuration?.title = "Siema"
+                btn.sizeToFit()
                 
-                return view
+                return btn
             }()
         }
 //        vc.preferredContentSize.height = 240
