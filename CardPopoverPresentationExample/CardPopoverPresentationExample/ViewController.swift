@@ -38,27 +38,51 @@ class ViewController: UIViewController {
 //        vc.shouldDisplayPageControl = false
         
         let vc = UINavigationController(rootViewController: TableViewController())
+    //    vc.preferredContentSize.height = 320
         vc.transitioningDelegate = transitionManager
+    //    vc.overrideUserInterfaceStyle = .dark
         vc.modalPresentationStyle = .custom
         if let popo = vc.presentationController as? CardPopoverPresentationController {
+            popo.overrideTraitCollection = UITraitCollection(userInterfaceStyle: .dark)
             popo.containerView?.overrideUserInterfaceStyle = .dark
-  //          popo.ignoredSafeAreaEdges = .bottom
-  //          popo.presentedViewInsets = .zero
+            //popo.ignoredSafeAreaEdges = [.left, .right]
+            //popo.presentedViewInsets.width = .zero
             popo.embeedView = true
+        //    popo.dismissButtonInsets.width = 64
+    //        popo.bottomViewSpacing = 160
    //         popo.prefersBlurredBackground = false
 //            if #available(iOS 17.0, *) {
 //                popo.traitOverrides.userInterfaceStyle = .dark
 //            } else {
 //                // Fallback on earlier versions
 //            }
+//            popo.showsDismissButton = false
+            popo.bottomView = {
+//                let cont = UIPageControl()
+//                cont.numberOfPages = 6
+//                cont.currentPage = 2
+//                cont.sizeToFit()
+//                return cont
+                let view = UIView(
+                    frame: CGRect(
+                        x: 0,
+                        y: 0,
+                        width: 160,
+                        height: 32
+                    )
+                )
+                view.backgroundColor = .yellow
+                
+                return view
+            }()
         }
-        //vc.preferredContentSize = .init(width: 650, height: 600)
+//        vc.preferredContentSize.height = 240
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self, weak vc] in
  //           vc?.preferredContentSize.height = 200
-//            if let presentationController = vc?.presentationController as? CardPopoverPresentationController {
-//                self?.transitionManager.sourceDirection = .fromRight
-//                presentationController.prefersBlurredBackground.toggle()
-//            }
+            if let presentationController = vc?.presentationController as? CardPopoverPresentationController {
+//                presentationController.showsDismissButton = false
+//
+            }
 //            self?.view.backgroundColor = .systemBackground
         }
         present(vc, animated: true)
@@ -89,12 +113,13 @@ final class TableViewController: UITableViewController {
             configuration.text = "Cell: \(indexPath.row)"
             return configuration
         }()
-        cell.backgroundConfiguration = {
-            var configuration = UIBackgroundConfiguration.listPlainCell()
-            configuration.backgroundColor = .clear
-            
-            return configuration
-        }()
+//        cell.backgroundConfiguration = {
+//            var configuration = UIBackgroundConfiguration.listPlainCell()
+//            configuration.backgroundColor = .clear
+//            
+//            return configuration
+//        }()
+        cell.backgroundColor = .clear
         
         return cell
     }
