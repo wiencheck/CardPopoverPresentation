@@ -83,7 +83,7 @@ public final class CardPopoverPresentationController: UIPresentationController {
      
      If there is no `bottomView` this parameter is ignored.
      */
-    public var bottomViewSpacing: CGFloat = 4 {
+    public var bottomViewSpacing: CGFloat = 8 {
         didSet { containerView?.setNeedsLayout() }
     }
     
@@ -99,6 +99,13 @@ public final class CardPopoverPresentationController: UIPresentationController {
     }
     
     public var prefersDimmedPresenentingView: Bool = true {
+        didSet { containerView?.setNeedsLayout() }
+    }
+    
+    /**
+     The user interface style adopted by all views participating in the presentation.
+     */
+    public var overrideUserInterfaceStyle: UIUserInterfaceStyle = .unspecified {
         didSet { containerView?.setNeedsLayout() }
     }
     
@@ -155,57 +162,7 @@ public final class CardPopoverPresentationController: UIPresentationController {
         super.presentationTransitionWillBegin()
         
         guard let containerView else { return }
-        var constraints: [NSLayoutConstraint] = []
-        
-        containerView.addSubview(dimmingView)
-        dimmingView.translatesAutoresizingMaskIntoConstraints = false
-        constraints.append(contentsOf: [
-            dimmingView.topAnchor.constraint(equalTo: containerView.topAnchor),
-            dimmingView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-            dimmingView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-            dimmingView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
-        ])
-        
-        containerView.addSubview(blurOverlayView)
-        blurOverlayView.translatesAutoresizingMaskIntoConstraints = false
-        constraints.append(contentsOf: [
-            blurOverlayView.topAnchor.constraint(equalTo: containerView.topAnchor),
-            blurOverlayView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-            blurOverlayView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-            blurOverlayView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
-        ])
-        
-        if _isDebuggingFrames {
-            let sf = UIView()
-            sf.isUserInteractionEnabled = false
-            sf.backgroundColor = .red
-            containerView.addSubview(sf)
-            sf.translatesAutoresizingMaskIntoConstraints = false
-            constraints.append(
-                contentsOf: [
-                    sf.topAnchor.constraint(equalTo: containerView.safeAreaLayoutGuide.topAnchor),
-                    sf.leadingAnchor.constraint(equalTo: containerView.safeAreaLayoutGuide.leadingAnchor),
-                    sf.bottomAnchor.constraint(equalTo: containerView.safeAreaLayoutGuide.bottomAnchor),
-                    sf.trailingAnchor.constraint(equalTo: containerView.safeAreaLayoutGuide.trailingAnchor)
-                ]
-            )
-        }
-        
-        _dismissButton.alpha = 0
-        containerView.addSubview(_dismissButton)
-        
-        if let bottomView {
-            bottomView.alpha = 0
-            containerView.addSubview(bottomView)
-        }
-        
-        NSLayoutConstraint.activate(constraints)
-        
-        if let presentedView {
-            let subview: UIView = embeedView ? ModalContainerView(contentView: presentedView) : presentedView
-            subview.tag = Self.presentedViewTag
-            containerView.addSubview(subview)
-        }
+        _buildViewHierarchy(containerView: containerView)
         
         presentedViewController.transitionCoordinator?.animate(alongsideTransition: { context in
             self.blurOverlayView.effect = self.blurEffect
@@ -234,6 +191,7 @@ public final class CardPopoverPresentationController: UIPresentationController {
     public override func containerViewWillLayoutSubviews() {
         super.containerViewWillLayoutSubviews()
         
+        containerView?.overrideUserInterfaceStyle = overrideUserInterfaceStyle
         _dismissButton.sizeToFit()
         modalContainerView?.prefersBlurredBackground = !prefersBlurredBackground
         blurOverlayView.effect = prefersBlurredBackground ? blurEffect : nil
@@ -294,14 +252,68 @@ private extension CardPopoverPresentationController {
     
     var blurEffect: UIBlurEffect { .init(style: .systemMaterial) }
     
+    func _buildViewHierarchy(containerView: UIView) {
+        var constraints: [NSLayoutConstraint] = []
+        
+        containerView.addSubview(dimmingView)
+        dimmingView.translatesAutoresizingMaskIntoConstraints = false
+        constraints.append(contentsOf: [
+            dimmingView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            dimmingView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            dimmingView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            dimmingView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
+        ])
+        
+        containerView.addSubview(blurOverlayView)
+        blurOverlayView.translatesAutoresizingMaskIntoConstraints = false
+        constraints.append(contentsOf: [
+            blurOverlayView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            blurOverlayView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            blurOverlayView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            blurOverlayView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
+        ])
+        
+        if _isDebuggingFrames {
+            let sf = UIView()
+            sf.isUserInteractionEnabled = false
+            sf.backgroundColor = .red
+            containerView.addSubview(sf)
+            sf.translatesAutoresizingMaskIntoConstraints = false
+            constraints.append(
+                contentsOf: [
+                    sf.topAnchor.constraint(equalTo: containerView.safeAreaLayoutGuide.topAnchor),
+                    sf.leadingAnchor.constraint(equalTo: containerView.safeAreaLayoutGuide.leadingAnchor),
+                    sf.bottomAnchor.constraint(equalTo: containerView.safeAreaLayoutGuide.bottomAnchor),
+                    sf.trailingAnchor.constraint(equalTo: containerView.safeAreaLayoutGuide.trailingAnchor)
+                ]
+            )
+        }
+        
+        _dismissButton.alpha = 0
+        containerView.addSubview(_dismissButton)
+        
+        if let bottomView {
+            bottomView.alpha = 0
+            containerView.addSubview(bottomView)
+        }
+        
+        NSLayoutConstraint.activate(constraints)
+        
+        if let presentedView {
+            let subview: UIView = embeedView ? ModalContainerView(contentView: presentedView) : presentedView
+            subview.tag = Self.presentedViewTag
+            containerView.addSubview(subview)
+        }
+    }
+    
     func updatePresentedViewFrame(animated: Bool) {
         guard let containerView, let _presentedView else {
             return
         }
         func updates() {
             _presentedView.frame = frameOfPresentedView(inParent: containerView)
-            _updateCloseButtonFrameIfNeeded(attachedView: _presentedView)
-            _updateBottomViewFrameIfNeeded(attachedView: _presentedView)
+            _updateDismissButtonFrame(attachedView: _presentedView)
+            _updateBottomViewFrame(attachedView: _presentedView)
         }
         // If presentation didn't complete ignore animated parameter.
         guard _presentationDidEnd, animated else {
@@ -318,18 +330,26 @@ private extension CardPopoverPresentationController {
         }()
     }
     
-    func _updateCloseButtonFrameIfNeeded(attachedView: UIView) {
-        guard showsDismissButton else { return }
+    func _updateDismissButtonFrame(attachedView: UIView) {
+        guard let containerView else { return }
         
         _dismissButton.sizeToFit()
+        let safeAreaFrame = containerView.safeAreaLayoutGuide.layoutFrame
         let buttonFrame = _dismissButton.frame
+        
         _dismissButton.frame.origin = CGPoint(
-            x: attachedView.frame.maxX - buttonFrame.width - dismissButtonInsets.width.grtZ,
-            y: attachedView.frame.minY - buttonFrame.height - dismissButtonInsets.height.grtZ
+            x: min(
+                safeAreaFrame.maxX - buttonFrame.width, // Don't let the button move outside safe area
+                attachedView.frame.maxX - buttonFrame.width - dismissButtonInsets.width.grtZ
+            ),
+            y: max(
+                safeAreaFrame.minY,
+                attachedView.frame.minY - buttonFrame.height - dismissButtonInsets.height.grtZ
+            )
         )
     }
     
-    func _updateBottomViewFrameIfNeeded(attachedView: UIView) {
+    func _updateBottomViewFrame(attachedView: UIView) {
         guard let bottomView else { return }
         
         let bottomFrame = bottomView.frame

@@ -7,7 +7,6 @@
 
 import UIKit
 import CardPopoverPresentation
-import AWPageViewController
 
 class ViewController: UIViewController {
     
@@ -17,11 +16,6 @@ class ViewController: UIViewController {
         
         return manager
     }()
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view.
-    }
     
     @IBAction func buttonPressed(_ sender: UIButton) {
         let controllers: [UIViewController] = [UIColor.systemCyan, .systemRed, .systemGreen]
@@ -30,56 +24,33 @@ class ViewController: UIViewController {
                 vc.view.backgroundColor = color
                 return vc
             }
-//        let vc = AWPageViewController(
-//            viewControllers: controllers,
-//            transitionStyle: .scroll,
-//            orientation: .horizontal
-//        )
-//        vc.shouldDisplayPageControl = false
-        
         let vc = UINavigationController(rootViewController: TableViewController())
-       // vc.preferredContentSize.height = 120
         vc.transitioningDelegate = transitionManager
-    //    vc.overrideUserInterfaceStyle = .dark
         vc.modalPresentationStyle = .custom
         if let popo = vc.presentationController as? CardPopoverPresentationController {
-            popo.overrideTraitCollection = UITraitCollection(userInterfaceStyle: .dark)
-            popo.containerView?.overrideUserInterfaceStyle = .dark
-            //popo.ignoredSafeAreaEdges = [.bottom, .top]
-            //popo.presentedViewInsets.width = .zero
-         //   popo.presentedViewInsets = .zero
             popo.embeedView = true
-        //    popo.dismissButtonInsets.width = 64
-    //        popo.bottomViewSpacing = 160
-   //         popo.prefersBlurredBackground = false
-//            if #available(iOS 17.0, *) {
-//                popo.traitOverrides.userInterfaceStyle = .dark
-//            } else {
-//                // Fallback on earlier versions
-//            }
-       //    popo.showsDismissButton = false
-            
+            popo.overrideUserInterfaceStyle = .dark
             popo.bottomView = {
-                let btn = UIButton(type: .system, primaryAction: UIAction() { [unowned vc, weak popo] _ in
+                let toggleButton = UIButton(type: .system, primaryAction: UIAction() { [unowned popo] _ in
+                    popo.showsDismissButton.toggle()
+                })
+                toggleButton.configuration = UIButton.Configuration.borderedTinted()
+                toggleButton.configuration?.title = "Hide/Show button"
+                
+                let toggleSize = UIButton(type: .system, primaryAction: UIAction() { [unowned vc] _ in
                     let height = vc.preferredContentSize.height
                     vc.preferredContentSize.height = (height >= 140) ? 0 : 140
-                    popo?.showsDismissButton.toggle()
                 })
-                btn.configuration = UIButton.Configuration.borderedTinted()
-                btn.configuration?.title = "Siema"
-                btn.sizeToFit()
+                toggleSize.configuration = UIButton.Configuration.borderedTinted()
+                toggleSize.configuration?.title = "Toggle size"
                 
-                return btn
+                let stack = UIStackView(arrangedSubviews: [toggleButton, toggleSize])
+                stack.axis = .horizontal
+                stack.spacing = 8
+                stack.frame.size = stack.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+
+                return stack
             }()
-        }
-//        vc.preferredContentSize.height = 240
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self, weak vc] in
- //           vc?.preferredContentSize.height = 200
-            if let presentationController = vc?.presentationController as? CardPopoverPresentationController {
-//                presentationController.showsDismissButton = false
-//
-            }
-//            self?.view.backgroundColor = .systemBackground
         }
         present(vc, animated: true)
     }
@@ -109,19 +80,9 @@ final class TableViewController: UITableViewController {
             configuration.text = "Cell: \(indexPath.row)"
             return configuration
         }()
-//        cell.backgroundConfiguration = {
-//            var configuration = UIBackgroundConfiguration.listPlainCell()
-//            configuration.backgroundColor = .clear
-//            
-//            return configuration
-//        }()
         cell.backgroundColor = .clear
         
         return cell
     }
-    
-}
-
-final class Page: AWPageViewController {
     
 }
